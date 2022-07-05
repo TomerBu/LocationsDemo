@@ -6,6 +6,7 @@ plugins {
     id 'dagger.hilt.android.plugin'
     id 'com.google.devtools.ksp'
     id 'kotlin-kapt'
+    id 'com.google.android.libraries.mapsplatform.secrets-gradle-plugin'
 }
 
 android {
@@ -50,7 +51,8 @@ dependencies {
 
     def retrofit_version = "2.9.0"
     def room_version = "2.4.2"
-    def lifecycle_extension_version = '2.4.1'
+    def nav_version = "2.5.0"
+    def lifecycle_extension_version = '2.5.0'
 
     // room:
     implementation "androidx.room:room-runtime:$room_version"

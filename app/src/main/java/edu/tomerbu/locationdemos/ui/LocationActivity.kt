@@ -1,4 +1,4 @@
-package edu.tomerbu.locationdemos
+package edu.tomerbu.locationdemos.ui
 
 import android.Manifest
 import android.content.*
@@ -15,14 +15,29 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.snackbar.Snackbar
+import edu.tomerbu.locationdemos.BuildConfig
+import edu.tomerbu.locationdemos.R
+import edu.tomerbu.locationdemos.SharedPreferenceUtil
 import edu.tomerbu.locationdemos.services.ForegroundOnlyLocationService
+import edu.tomerbu.locationdemos.toText
+
 private const val TAG = "MainActivity"
 private const val REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE = 34
+
 class LocationActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceChangeListener {
     private var foregroundOnlyLocationServiceBound = false
+    private val isMonitoring
+        get() =
+            sharedPreferences.getBoolean(SharedPreferenceUtil.KEY_FOREGROUND_ENABLED, false)
 
     // Provides location updates for while-in-use feature.
     private var foregroundOnlyLocationService: ForegroundOnlyLocationService? = null
+        set(value) {
+            field = value
+            if (isMonitoring) {
+                field?.subscribeToLocationUpdates()
+            }
+        }
 
     // Listens for location broadcasts from ForegroundOnlyLocationService.
     private lateinit var foregroundOnlyBroadcastReceiver: ForegroundOnlyBroadcastReceiver
@@ -66,14 +81,14 @@ class LocationActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
         foregroundOnlyLocationButton.setOnClickListener {
             //check if we are currently receiving:
             val enabled = sharedPreferences.getBoolean(
-                SharedPreferenceUtil.KEY_FOREGROUND_ENABLED, false)
+                SharedPreferenceUtil.KEY_FOREGROUND_ENABLED, false
+            )
 
             //check if we are currently receiving: if so cancel (toggle)
             if (enabled) {
                 foregroundOnlyLocationService?.unsubscribeToLocationUpdates()
             } else {
                 //else -> start receiving
-                // TODO: Step 1.0, Review Permissions: Checks and requests if needed.
                 if (foregroundPermissionApproved()) {
                     foregroundOnlyLocationService?.subscribeToLocationUpdates()
                         ?: Log.d(TAG, "Service Not Bound")
@@ -88,7 +103,7 @@ class LocationActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
         super.onStart()
 
         updateButtonState(
-            sharedPreferences.getBoolean(SharedPreferenceUtil.KEY_FOREGROUND_ENABLED, false)
+            isMonitoring
         )
         sharedPreferences.registerOnSharedPreferenceChangeListener(this)
 
@@ -101,7 +116,8 @@ class LocationActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
         LocalBroadcastManager.getInstance(this).registerReceiver(
             foregroundOnlyBroadcastReceiver,
             IntentFilter(
-                ForegroundOnlyLocationService.ACTION_FOREGROUND_ONLY_LOCATION_BROADCAST)
+                ForegroundOnlyLocationService.ACTION_FOREGROUND_ONLY_LOCATION_BROADCAST
+            )
         )
     }
 
@@ -125,13 +141,14 @@ class LocationActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
         // Updates button states if new while in use location is added to SharedPreferences.
         if (key == SharedPreferenceUtil.KEY_FOREGROUND_ENABLED) {
-            updateButtonState(sharedPreferences.getBoolean(
-                SharedPreferenceUtil.KEY_FOREGROUND_ENABLED, false)
+            updateButtonState(
+                sharedPreferences.getBoolean(
+                    SharedPreferenceUtil.KEY_FOREGROUND_ENABLED, false
+                )
             )
         }
     }
 
-    // TODO: Step 1.0, Review Permissions: Method checks if permissions approved.
     private fun foregroundPermissionApproved(): Boolean {
         return PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(
             this,
@@ -139,7 +156,6 @@ class LocationActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
         )
     }
 
-    // TODO: Step 1.0, Review Permissions: Method requests permissions.
     private fun requestForegroundPermissions() {
         val provideRationale = foregroundPermissionApproved()
 
@@ -170,7 +186,6 @@ class LocationActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
         }
     }
 
-    // TODO: Step 1.0, Review Permissions: Handles permission result.
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<String>,
@@ -220,9 +235,11 @@ class LocationActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
 
     private fun updateButtonState(trackingLocation: Boolean) {
         if (trackingLocation) {
-            foregroundOnlyLocationButton.text = getString(R.string.stop_location_updates_button_text)
+            foregroundOnlyLocationButton.text =
+                getString(R.string.stop_location_updates_button_text)
         } else {
-            foregroundOnlyLocationButton.text = getString(R.string.start_location_updates_button_text)
+            foregroundOnlyLocationButton.text =
+                getString(R.string.start_location_updates_button_text)
         }
     }
 
