@@ -1,6 +1,7 @@
 package edu.tomerbu.locationdemos.ui
 
 import android.Manifest
+import android.app.NotificationManager
 import android.content.*
 import android.content.pm.PackageManager
 import android.location.Location
@@ -18,6 +19,7 @@ import com.google.android.material.snackbar.Snackbar
 import edu.tomerbu.locationdemos.BuildConfig
 import edu.tomerbu.locationdemos.R
 import edu.tomerbu.locationdemos.SharedPreferenceUtil
+import edu.tomerbu.locationdemos.helpers.NotificationHelper
 import edu.tomerbu.locationdemos.services.ForegroundOnlyLocationService
 import edu.tomerbu.locationdemos.toText
 
