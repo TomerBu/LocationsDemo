@@ -37,14 +37,14 @@ class NotificationHelper(private val context: Context, private val sound: Boolea
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     }
 
-    fun generateNotificationAndSend(location: Location?){
+    fun generateNotificationAndSend(location: Location?) {
         notificationManager.notify(NOTIFICATION_ID, generateNotification(location))
     }
 
     /*
     * Generates a BIG_TEXT_STYLE Notification that represent latest location.
     */
-     fun generateNotification(location: Location?): Notification {
+    fun generateNotification(location: Location?): Notification {
         Log.d(TAG, "generateNotification()")
 
         val mainNotificationText =
@@ -65,7 +65,10 @@ class NotificationHelper(private val context: Context, private val sound: Boolea
         cancelIntent.putExtra(EXTRA_CANCEL_LOCATION_TRACKING_FROM_NOTIFICATION, true)
 
         val servicePendingIntent = PendingIntent.getService(
-            context, 0, cancelIntent, PendingIntent.FLAG_IMMUTABLE
+            context,
+            0,
+            cancelIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val activityPendingIntent = PendingIntent.getActivity(
@@ -79,7 +82,7 @@ class NotificationHelper(private val context: Context, private val sound: Boolea
                 context,
                 NOTIFICATION_CHANNEL_ID
             )
-        if(sound){
+        if (sound) {
             notificationCompatBuilder.setSound(uri, STREAM_MUSIC)
         }
         return notificationCompatBuilder
@@ -87,7 +90,7 @@ class NotificationHelper(private val context: Context, private val sound: Boolea
             .setContentTitle(titleText)
             .setContentText(mainNotificationText)
             .setSmallIcon(R.mipmap.ic_launcher)
-           // .setDefaults(NotificationCompat.DEFAULT_ALL)
+            // .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setOngoing(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .addAction(
@@ -138,10 +141,10 @@ class NotificationHelper(private val context: Context, private val sound: Boolea
         private const val PACKAGE_NAME = "edu.tomerbu.locationdemos"
         private const val TAG = "edu.tomerbu.locationdemos.tag"
 
-        private const val EXTRA_CANCEL_LOCATION_TRACKING_FROM_NOTIFICATION =
+        internal const val EXTRA_CANCEL_LOCATION_TRACKING_FROM_NOTIFICATION =
             "$PACKAGE_NAME.extra.CANCEL_LOCATION_TRACKING_FROM_NOTIFICATION"
 
-        private const val NOTIFICATION_ID = 12345678
+        internal const val NOTIFICATION_ID = 12345678
 
         private const val NOTIFICATION_CHANNEL_ID = "while_in_use_channel_01"
         private const val NOTIFICATION_CHANNEL_DESCRIPTION = "Location Channel"

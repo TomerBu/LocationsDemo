@@ -16,6 +16,8 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.gms.location.*
 import edu.tomerbu.locationdemos.R
 import edu.tomerbu.locationdemos.SharedPreferenceUtil
+import edu.tomerbu.locationdemos.helpers.NotificationHelper
+import edu.tomerbu.locationdemos.helpers.NotificationHelper.Companion.NOTIFICATION_ID
 import edu.tomerbu.locationdemos.toText
 import edu.tomerbu.locationdemos.ui.LocationActivity
 import java.util.concurrent.TimeUnit
@@ -109,7 +111,7 @@ class ForegroundOnlyLocationService : Service() {
                 if (serviceRunningInForeground) {
                     notificationManager.notify(
                         NOTIFICATION_ID,
-                        generateNotification(currentLocation)
+                        NotificationHelper(this@ForegroundOnlyLocationService ).generateNotification(currentLocation)
                     )
                 }
             }
@@ -161,7 +163,7 @@ class ForegroundOnlyLocationService : Service() {
         // we do nothing.
         if (!configurationChange && SharedPreferenceUtil.getLocationTrackingPref(this)) {
             Log.d(TAG, "Start foreground service")
-            val notification = generateNotification(currentLocation)
+            val notification = NotificationHelper(this).generateNotification(currentLocation)
             startForeground(NOTIFICATION_ID, notification)
             serviceRunningInForeground = true
         }
@@ -220,84 +222,6 @@ class ForegroundOnlyLocationService : Service() {
         }
     }
 
-    /*
-     * Generates a BIG_TEXT_STYLE Notification that represent latest location.
-     */
-    private fun generateNotification(location: Location?): Notification {
-        Log.d(TAG, "generateNotification()")
-
-        // Main steps for building a BIG_TEXT_STYLE notification:
-        //      0. Get data
-        //      1. Create Notification Channel for O+
-        //      2. Build the BIG_TEXT_STYLE
-        //      3. Set up Intent / Pending Intent for notification
-        //      4. Build and issue the notification
-
-        // 0. Get data
-        val mainNotificationText = location?.toText() ?: getString(R.string.no_location_text)
-        val titleText = getString(R.string.app_name)
-
-        // 1. Create Notification Channel for O+ and beyond devices (26+).
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-
-            val notificationChannel = NotificationChannel(
-                NOTIFICATION_CHANNEL_ID, titleText, NotificationManager.IMPORTANCE_HIGH /*popup*/
-            )
-
-            // No sound (need to delete app, or create a new channel for silent notifications)
-            // once notification channel is created - it has a sound that cannot be changed
-
-            notificationChannel.setSound(null, null)
-            // Adds NotificationChannel to system. Attempting to create an
-            // existing notification channel with its original values performs
-            // no operation, so it's safe to perform the below sequence.
-            notificationManager.createNotificationChannel(notificationChannel)
-        }
-
-        // 2. Build the BIG_TEXT_STYLE.
-        val bigTextStyle = NotificationCompat.BigTextStyle()
-            .bigText(mainNotificationText)
-            .setBigContentTitle(titleText)
-
-        // 3. Set up main Intent/Pending Intents for notification.
-        val launchActivityIntent = Intent(this, LocationActivity::class.java)
-
-        val cancelIntent = Intent(this, ForegroundOnlyLocationService::class.java)
-        cancelIntent.putExtra(EXTRA_CANCEL_LOCATION_TRACKING_FROM_NOTIFICATION, true)
-
-        val servicePendingIntent = PendingIntent.getService(
-            this, 0, cancelIntent, PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val activityPendingIntent = PendingIntent.getActivity(
-            this, 0, launchActivityIntent, PendingIntent.FLAG_IMMUTABLE
-        )
-
-        // 4. Build and issue the notification.
-        // Notification Channel Id is ignored for Android pre O (26).
-        val notificationCompatBuilder =
-            NotificationCompat.Builder(applicationContext, NOTIFICATION_CHANNEL_ID)
-
-        return notificationCompatBuilder
-            .setStyle(bigTextStyle)
-            .setContentTitle(titleText)
-            .setContentText(mainNotificationText)
-            .setSmallIcon(R.mipmap.ic_launcher)
-
-            .setDefaults(NotificationCompat.DEFAULT_ALL)
-            .setOngoing(true)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .addAction(
-                R.drawable.ic_launch, getString(R.string.launch_activity),
-                activityPendingIntent
-            )
-            .addAction(
-                R.drawable.ic_cancel,
-                getString(R.string.stop_location_updates_button_text),
-                servicePendingIntent
-            )
-            .build()
-    }
 
     /**
      * Class used for the client Binder.  Since this service runs in the same process as its
@@ -311,19 +235,18 @@ class ForegroundOnlyLocationService : Service() {
 
     companion object {
         private const val TAG = "ForegroundOnlyLocationService"
-
         private const val PACKAGE_NAME = "edu.tomerbu.locationdemos.services"
 
+        //Broadcasts:
         internal const val ACTION_FOREGROUND_ONLY_LOCATION_BROADCAST =
             "$PACKAGE_NAME.action.FOREGROUND_ONLY_LOCATION_BROADCAST"
-
         internal const val EXTRA_LOCATION = "$PACKAGE_NAME.extra.LOCATION"
 
+        //Notifications:
+        //cancel the PendingIntent/notification
         private const val EXTRA_CANCEL_LOCATION_TRACKING_FROM_NOTIFICATION =
-            "$PACKAGE_NAME.extra.CANCEL_LOCATION_TRACKING_FROM_NOTIFICATION"
+            NotificationHelper.EXTRA_CANCEL_LOCATION_TRACKING_FROM_NOTIFICATION
 
-        private const val NOTIFICATION_ID = 12345678
-
-        private const val NOTIFICATION_CHANNEL_ID = "while_in_use_channel_01"
+        private const val NOTIFICATION_ID = NotificationHelper.NOTIFICATION_ID
     }
 }
