@@ -14,18 +14,31 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.flowWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
 import edu.tomerbu.locationdemos.BuildConfig
 import edu.tomerbu.locationdemos.R
 import edu.tomerbu.locationdemos.SharedPreferenceUtil
 import edu.tomerbu.locationdemos.helpers.NotificationHelper
+import edu.tomerbu.locationdemos.location.LocationRepository
 import edu.tomerbu.locationdemos.services.ForegroundOnlyLocationService
 import edu.tomerbu.locationdemos.toText
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-private const val TAG = "MainActivity"
-private const val REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE = 34
+internal const val TAG = "LocationActivity"
+internal const val REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE = 34
 
+@AndroidEntryPoint
 class LocationActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceChangeListener {
     private var foregroundOnlyLocationServiceBound = false
     private val isMonitoring
@@ -40,9 +53,6 @@ class LocationActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
                 field?.subscribeToLocationUpdates()
             }
         }
-
-    // Listens for location broadcasts from ForegroundOnlyLocationService.
-    private lateinit var foregroundOnlyBroadcastReceiver: ForegroundOnlyBroadcastReceiver
 
     private lateinit var sharedPreferences: SharedPreferences
 
@@ -70,8 +80,6 @@ class LocationActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
 
         setContentView(R.layout.activity_location)
 
-        foregroundOnlyBroadcastReceiver = ForegroundOnlyBroadcastReceiver()
-
         sharedPreferences =
             getSharedPreferences(getString(R.string.preference_file_key), Context.MODE_PRIVATE)
 
@@ -88,12 +96,11 @@ class LocationActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
 
             //check if we are currently receiving: if so cancel (toggle)
             if (enabled) {
-                foregroundOnlyLocationService?.unsubscribeToLocationUpdates()
+                unsubscribeToLocationUpdates()
             } else {
                 //else -> start receiving
                 if (foregroundPermissionApproved()) {
-                    foregroundOnlyLocationService?.subscribeToLocationUpdates()
-                        ?: Log.d(TAG, "Service Not Bound")
+                    subscribeToLocationUpdates()
                 } else {
                     requestForegroundPermissions()
                 }
@@ -111,23 +118,6 @@ class LocationActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
 
         val serviceIntent = Intent(this, ForegroundOnlyLocationService::class.java)
         bindService(serviceIntent, foregroundOnlyServiceConnection, Context.BIND_AUTO_CREATE)
-    }
-
-    override fun onResume() {
-        super.onResume()
-        LocalBroadcastManager.getInstance(this).registerReceiver(
-            foregroundOnlyBroadcastReceiver,
-            IntentFilter(
-                ForegroundOnlyLocationService.ACTION_FOREGROUND_ONLY_LOCATION_BROADCAST
-            )
-        )
-    }
-
-    override fun onPause() {
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(
-            foregroundOnlyBroadcastReceiver
-        )
-        super.onPause()
     }
 
     override fun onStop() {
@@ -205,7 +195,7 @@ class LocationActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
 
                 grantResults[0] == PackageManager.PERMISSION_GRANTED ->
                     // Permission was granted.
-                    foregroundOnlyLocationService?.subscribeToLocationUpdates()
+                    subscribeToLocationUpdates()
 
                 else -> {
                     // Permission denied.
@@ -250,19 +240,29 @@ class LocationActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
         outputTextView.text = outputWithPreviousLogs
     }
 
-    /**
-     * Receiver for location broadcasts from [ForegroundOnlyLocationService].
-     */
-    private inner class ForegroundOnlyBroadcastReceiver : BroadcastReceiver() {
+    //receive location updates via Flow
+    @Inject
+    lateinit var repository: LocationRepository
 
-        override fun onReceive(context: Context, intent: Intent) {
-            val location = intent.getParcelableExtra<Location>(
-                ForegroundOnlyLocationService.EXTRA_LOCATION
-            )
+    // Get a reference to the Job from the Flow so we can stop it from UI events
+    private var locationFlow: Job? = null
 
-            if (location != null) {
-                logResultsToScreen("Foreground location: ${location.toText()}")
+
+    private fun subscribeToLocationUpdates() {
+        // Observe locations via Flow as they are generated by the repository
+        locationFlow = repository.getLocations()
+            .flowWithLifecycle(lifecycle, Lifecycle.State.STARTED)
+            .onEach {
+                logResultsToScreen("Foreground location: ${it.toText()}")
             }
-        }
+            .launchIn(lifecycleScope)
+
+        foregroundOnlyLocationService?.subscribeToLocationUpdates()
     }
+
+    private fun unsubscribeToLocationUpdates() {
+        locationFlow?.cancel()
+        foregroundOnlyLocationService?.unsubscribeToLocationUpdates()
+    }
+
 }

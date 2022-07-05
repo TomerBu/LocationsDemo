@@ -1,4 +1,4 @@
-package edu.tomerbu.locationdemos
+package edu.tomerbu.locationdemos.location
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -8,6 +8,8 @@ import android.os.Looper
 
 import android.util.Log
 import com.google.android.gms.location.*
+import edu.tomerbu.locationdemos.hasPermission
+import edu.tomerbu.locationdemos.toText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
