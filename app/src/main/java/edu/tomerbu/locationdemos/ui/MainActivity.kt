@@ -9,7 +9,8 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import edu.tomerbu.locationdemos.R
-import edu.tomerbu.locationdemos.ui.databinding.ActivityMainBinding
+import edu.tomerbu.locationdemos.databinding.ActivityMainBinding
+
 
 class MainActivity : AppCompatActivity() {
 

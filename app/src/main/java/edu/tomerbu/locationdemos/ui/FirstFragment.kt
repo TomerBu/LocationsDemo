@@ -6,7 +6,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.navigation.fragment.findNavController
-import edu.tomerbu.locationdemos.ui.databinding.FragmentFirstBinding
+import androidx.work.OneTimeWorkRequest
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import edu.tomerbu.locationdemos.R
+import edu.tomerbu.locationdemos.databinding.FragmentFirstBinding
+import edu.tomerbu.locationdemos.work.DemoWorker
+
 
 /**
  * A simple [Fragment] subclass as the default destination in the navigation.
@@ -22,7 +28,7 @@ class FirstFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
 
         _binding = FragmentFirstBinding.inflate(inflater, container, false)
         return binding.root
@@ -33,7 +39,8 @@ class FirstFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.buttonFirst.setOnClickListener {
-            findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)
+            val request = OneTimeWorkRequestBuilder<DemoWorker>().build()
+            WorkManager.getInstance(requireContext()).enqueue(request)
         }
     }
 
