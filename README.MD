@@ -1,1 +1,3 @@
-Gitting Started with git
+Gitting Started with git!
+<hr>
+Have a pleasant Journey :)
