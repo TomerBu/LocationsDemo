@@ -45,7 +45,7 @@ class SharedLocationManager constructor(
 
     @ExperimentalCoroutinesApi
     @SuppressLint("MissingPermission")
-    private val _locationUpdates = callbackFlow<Location> {
+    private val _locationUpdates = callbackFlow {
         val callback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
                 Log.d(TAG, "New location: ${result.lastLocation.toText()}")
