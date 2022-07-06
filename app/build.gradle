@@ -38,6 +38,7 @@ android {
     }
     buildFeatures {
         viewBinding true
+        dataBinding true
     }
 }
 
@@ -82,7 +83,7 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:$lifecycle_extension_version"
     // To observe the flow within the Service based on the lifecycle
     implementation "androidx.lifecycle:lifecycle-service:$lifecycle_extension_version"
-    
+
     // okhttp:
     implementation 'com.squareup.okhttp3:logging-interceptor:4.10.0'
 
@@ -108,6 +109,29 @@ dependencies {
 
     //media notification style
     implementation "androidx.media:media:1.6.0"
+
+    //work manager:
+    def work_version = "2.7.1"
+    // Kotlin + coroutines
+    implementation("androidx.work:work-runtime-ktx:$work_version")
+
+    /**
+     * supports the use of GCMNetworkManager as a scheduler when Google Play Services is available
+     * for API levels <= 22.
+     * This is an optional dependency that helps with more reliable and performant
+     * background processing on older API versions.
+     * If your app uses Google Play Services, add this dependency to your gradle file
+     * to automatically get GCMNetworkManager support.
+     * If Play Services is not available, WorkManager will continue to fall back to AlarmManager
+     * on older devices.
+     */
+    implementation("androidx.work:work-gcm:$work_version")
+
+    // optional - Test helpers
+    androidTestImplementation("androidx.work:work-testing:$work_version")
+
+    // optional - Multiprocess support - for apps that use multiple processes
+    implementation "androidx.work:work-multiprocess:$work_version"
 }
 
 
