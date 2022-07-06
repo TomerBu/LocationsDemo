@@ -12,6 +12,7 @@ import androidx.work.WorkManager
 import edu.tomerbu.locationdemos.R
 import edu.tomerbu.locationdemos.databinding.FragmentFirstBinding
 import edu.tomerbu.locationdemos.work.DemoWorker
+import edu.tomerbu.locationdemos.work.RefreshDataWorker
 
 
 /**
@@ -39,7 +40,10 @@ class FirstFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.buttonFirst.setOnClickListener {
-            val request = OneTimeWorkRequestBuilder<DemoWorker>().build()
+//            val request = OneTimeWorkRequestBuilder<DemoWorker>().build()
+//            WorkManager.getInstance(requireContext()).enqueue(request)
+
+            val request = OneTimeWorkRequestBuilder<RefreshDataWorker>().build()
             WorkManager.getInstance(requireContext()).enqueue(request)
         }
     }
