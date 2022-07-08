@@ -1,6 +1,8 @@
 package edu.tomerbu.locationdemos
 
 import android.Manifest
+import android.app.AlarmManager
+import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
@@ -12,6 +14,13 @@ import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import edu.tomerbu.locationdemos.ui.TAG
+/**
+ * Gets the [NotificationManager] system service.
+ *
+ * @return the [NotificationManager] system service
+ */
+fun Context.getNotificationManager() =
+    getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
 
 /**
  * Returns the `location` object as a human readable string.

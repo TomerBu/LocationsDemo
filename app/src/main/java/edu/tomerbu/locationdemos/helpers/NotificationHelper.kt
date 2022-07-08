@@ -40,15 +40,18 @@ class NotificationHelper(private val context: Context, private val sound: Boolea
     fun generateNotificationAndSend(location: Location?) {
         notificationManager.notify(NOTIFICATION_ID, generateNotification(location))
     }
+    fun generateNotificationAndSend(text: String) {
+        notificationManager.notify(NOTIFICATION_ID, generateNotification(text))
+    }
 
     /*
     * Generates a BIG_TEXT_STYLE Notification that represent latest location.
     */
-    fun generateNotification(location: Location?): Notification {
+    fun generateNotification(text: String?): Notification {
         Log.d(TAG, "generateNotification()")
 
         val mainNotificationText =
-            location?.toText() ?: context.getString(R.string.no_location_text)
+            text
 
         // 1. Create Notification Channel for O+ and beyond devices (26+).
         createNotificationChannel()
@@ -103,6 +106,11 @@ class NotificationHelper(private val context: Context, private val sound: Boolea
                 servicePendingIntent
             )
             .build()
+    }
+
+    fun generateNotification(location: Location?): Notification {
+        val text = location?.toText() ?: context.getString(R.string.no_location_text)
+        return generateNotification(text)
     }
 
 
