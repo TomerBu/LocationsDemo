@@ -1,6 +1,7 @@
 package edu.tomerbu.locationdemos.ui
 
 import android.Manifest
+import android.R.attr.data
 import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
@@ -13,13 +14,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.fragment.app.Fragment
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
+import androidx.work.*
 import edu.tomerbu.locationdemos.*
 import edu.tomerbu.locationdemos.databinding.FragmentFirstBinding
-import edu.tomerbu.locationdemos.work.RefreshDataWorker
+import edu.tomerbu.locationdemos.work.DemoWorker
+import java.util.concurrent.TimeUnit
 import kotlin.system.exitProcess
 
 
@@ -87,17 +87,49 @@ class FirstFragment : Fragment() {
             return
         }
         Toast.makeText(requireContext(), "We have background", Toast.LENGTH_SHORT).show()
+
+
+        val workManager = WorkManager.getInstance(requireContext())
+
+        //constraints:
+        val constraint: Constraints = Constraints.Builder()
+            .setRequiresCharging(true)
+            .build()
+
+        //PeriodicWorkRequest.MIN_PERIODIC_INTERVAL_MILLIS// 15 minutes.
+        //request:
+        val request =  PeriodicWorkRequestBuilder<DemoWorker>(
+            16, TimeUnit.MINUTES,
+            5, TimeUnit.MINUTES
+        ).setInitialDelay /*+- 5*/(6, TimeUnit.SECONDS)
+            .setInputData(Data.Builder().putInt(DemoWorker.TIMES, 8888).build())
+            .setConstraints(constraint).build()
+
+        //start:
+        workManager.enqueueUniquePeriodicWork(DemoWorker.UNIQUE_ID, ExistingPeriodicWorkPolicy.KEEP, request)
+
+        //Observe the status::
+        workManager.getWorkInfoByIdLiveData(request.id).observe(viewLifecycleOwner) {
+            binding.textviewFirst.text = when (it.state) {
+                WorkInfo.State.SUCCEEDED -> {
+                    it.outputData.getString(DemoWorker.RESULT_DEMO_WORKER)?.let { data ->
+                        "Success $data"
+                    } ?: "Success With No Output"
+                }
+                WorkInfo.State.ENQUEUED -> "Enqueued"
+                WorkInfo.State.BLOCKED -> "Blocked"
+                WorkInfo.State.CANCELLED -> "Canceled"
+                WorkInfo.State.FAILED -> "Failed"
+                WorkInfo.State.RUNNING -> "Running"
+            }
+        }
     }
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.buttonFirst.setOnClickListener {
             doWorkThatRequiresPermission()
-            //val request = OneTimeWorkRequestBuilder<DemoWorker>().build()
-            //WorkManager.getInstance(requireContext()).enqueue(request)
-
-            val request = OneTimeWorkRequestBuilder<RefreshDataWorker>().build()
-            WorkManager.getInstance(requireContext()).enqueue(request)
         }
     }
 
